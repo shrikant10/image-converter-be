@@ -26,21 +26,27 @@ def health_check(request):
 @csrf_exempt
 def upload_image(request):
     if request.method == 'POST':
-        print('request: ', request)
         form = ImageUploadForm(request.POST, request.FILES)
+
         if form.is_valid():
+            # Extract original filename and format from the uploaded file
+            uploaded_file = form.cleaned_data['image']
+            original_filename, original_format = os.path.splitext(uploaded_file.name)
+            original_format = original_format[1:]
 
             # Generate a unique identifier (filename) for the stored image
             unique_identifier = str(uuid.uuid4())
+
             # Check if the identifier is already in use, generate a new one if needed
             while StoredImage.objects.filter(identifier=unique_identifier).exists():
                 unique_identifier = str(uuid.uuid4())
 
             # Save the uploaded image to the specified path
             image = form.save(commit=False)
-            image.image.name = f'{unique_identifier}.jpg'
+            image.image.name = f'{unique_identifier}.{original_format.lower()}'
             image.identifier = unique_identifier
-            image.path = f'media/uploads/{unique_identifier}.jpg'
+            image.format = original_format
+            image.path = f'media/uploads/{unique_identifier}.{original_format.lower()}'
             image.save()
 
             # Return the unique identifier as the HTTP response
@@ -49,6 +55,7 @@ def upload_image(request):
                 'message': 'Image uploaded and stored successfully',
                 'identifier': unique_identifier,
             }
+
             response = JsonResponse(response_data)
             response["Access-Control-Allow-Origin"] = "*"  # Replace with your frontend domain
             response["Access-Control-Allow-Methods"] = "POST, OPTIONS"
@@ -81,9 +88,10 @@ def convert_image(request):
 
             # Fetch the stored image details from the database
             stored_image = StoredImage.objects.get(identifier=identifier)
-
             # Open the stored image using Pillow
+
             img = PILImage.open(stored_image.path)
+            save_format = 'PNG' if img.mode == 'RGBA' else 'JPEG'
 
             # Perform image processing (resizing) based on configuration parameters
             if width and height:
@@ -96,20 +104,19 @@ def convert_image(request):
             converted_folder_path = os.path.join('media', 'converted')
             if not os.path.exists(converted_folder_path):
                 os.makedirs(converted_folder_path)
+            converted_identifier_path = f'media/converted/{identifier}.{stored_image.format.lower()}'
+            resized_img.save(converted_identifier_path, save_format)
 
-            converted_identifier_path = f'media/converted/{identifier}.jpg'
-            print('------ ', target_file_size)
             if target_file_size > 0:
                 quality = 95
 
                 # Compress the image iteratively until the file size is below the target
-                print('------ ', quality, os.path.getsize(converted_identifier_path), target_file_size * 1024)
                 while os.path.getsize(converted_identifier_path) > target_file_size * 1024 and quality >= 10:
-                    resized_img.save(converted_identifier_path, 'JPEG', quality=quality)
+                    resized_img.save(converted_identifier_path, save_format, quality=quality)
                     quality -= 5
             else:
                 # If target_file_size is not provided, save without compression
-                resized_img.save(converted_identifier_path)
+                resized_img.save(converted_identifier_path, format=img.format)
 
             response_data = {
                 'status': 'success',
@@ -156,7 +163,8 @@ def log_frontend_event(request):
 @csrf_exempt
 @require_GET
 def get_converted_image(request, identifier):
-    converted_identifier_path = f'media/converted/{identifier}.jpg'  # Adjust the path as needed
+    stored_image = StoredImage.objects.get(identifier=identifier)
+    converted_identifier_path = f'media/converted/{identifier}.{stored_image.format.lower()}'  # Adjust the path as needed
 
     if os.path.isfile(converted_identifier_path):
         response = FileResponse(open(converted_identifier_path, 'rb'), content_type='image/jpeg')

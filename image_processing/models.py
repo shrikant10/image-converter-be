@@ -9,6 +9,7 @@ class StoredImage(models.Model):
     image = models.ImageField(upload_to='uploads/')
     identifier = models.CharField(max_length=50, unique=True)
     path = models.CharField(max_length=255)
+    format = models.CharField(max_length=255)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
