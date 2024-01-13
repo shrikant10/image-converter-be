@@ -1,0 +1,62 @@
+# Custom
+media
+.DS_Store
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Caches
+*.sqlite3
+__pycache__/
+.cache/
+.cached/
+.pytest_cache/
+
+# Logs
+logs/
+*.log
+*.log.*
+*.log-*
+
+# Environment variables
+.env
+
+# Distribution / packaging
+/dist/
+/build/
+
+# Local development settings
+.envrc
+
+# Database
+/db.sqlite3
+
+# Visual Studio Code settings
+.vscode/
+
+# PyCharm settings
+.idea/
+
+# Jupyter notebook checkpoint files
+.ipynb_checkpoints/
+
+# Django migration files
+**/migrations/*.py
+**/migrations/*.pyc
+
+# Docker Compose
+docker-compose.yml
+docker-compose.override.yml
+
+# Pipenv environment
+/.venv
+
+# Poetry
+__pypackages__/
+poetry.lock
+pyproject.toml
+
+# End of File
