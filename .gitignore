@@ -43,10 +43,6 @@ logs/
 # Jupyter notebook checkpoint files
 .ipynb_checkpoints/
 
-# Django migration files
-**/migrations/*.py
-**/migrations/*.pyc
-
 # Docker Compose
 docker-compose.yml
 docker-compose.override.yml
